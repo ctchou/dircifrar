@@ -1,8 +1,8 @@
 
 from .__init__ import (
+    __pkg_name__,
     __pkg_version__,
     __config_filename__,
-    __test_password__,
 )
 from .dirapi_plain import DirPlain
 from .dirapi_crypt import DirCrypt
@@ -12,6 +12,7 @@ from nacl.pwhash import argon2i
 from nacl.secret import SecretBox
 from nacl.bindings import crypto_secretstream_xchacha20poly1305_KEYBYTES as KEYBYTES
 
+from getpass import getpass
 from pathlib import Path
 import json, re
 
@@ -60,11 +61,16 @@ def unwrap_crypt_config(config, password):
     version = unwrapped_master_key[KEYBYTES:].decode('utf-8')
     return (master_key, version)
 
+def get_password(dir_root):
+    password = getpass(prompt=f"{__pkg_name__} password for {dir_root}: ")
+    return password.encode('utf-8')
+
 def init_config(dir_type, dir_path, exclude, overwrite):
     if dir_type == 'plain':
         config = make_plain_config(__pkg_version__, exclude)
     elif dir_type == 'crypt':
-        config = make_crypt_config(__pkg_version__, exclude, __test_password__)
+        password = get_password(dir_path)
+        config = make_crypt_config(__pkg_version__, exclude, password)
     else:
         raise ValueError(f"Error: {dir_type} is not a supported directory type")
     dir_path = Path(dir_path)
@@ -110,7 +116,8 @@ def open_dirapi(dir_path, test_key=None):
     if dir_type == 'plain':
         return DirPlain(dir_path, version, exclude, config)
     elif dir_type == 'crypt':
-        master_key, version_1 = unwrapped_master_key(config, __test_password__)
+        password = get_password(dir_path)
+        master_key, version_1 = unwrap_crypt_config(config, password)
         if version_1 != version:
             raise ValueError(f"Error: {config_file} version check failed")
         return DirCrypt(dir_path, version, exclude, config, master_key)

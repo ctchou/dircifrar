@@ -18,5 +18,3 @@ __pkg_email__ = 'chingtsun.chou@gmail.com'
 __pkg_url__ = 'https://bitbucket.org/ctchou/dircifrar/'
 
 __config_filename__ = f'.{__pkg_name__}_config.json'
-
-__test_password__ = b'The Magic Words are Squeamish Ossifrage.'

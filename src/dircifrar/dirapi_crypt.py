@@ -1,7 +1,4 @@
 
-from .__init__ import (
-    __test_password__,
-)
 from .filecrypt import (
     file_encrypt,
     file_decrypt,
@@ -97,7 +94,7 @@ class DirCrypt(object):
         crypt_file = self.dir_root / path_hash(self.key, path)
         try:
             os.remove(crypt_file)
-            res.succ_removed_crypt_files.append(path)
+            res.succ_removed_files.append(path)
         except e:
             res.fail_removed_dirs.append((path, str(e)))
 
