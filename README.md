@@ -17,10 +17,6 @@ Dropbox.
 Currently `dircifrar` handles only ordinary files and ignores all
 symbolic links.
 
-## Installation
-
-Use `pip` to install and uninstall `dircifrar`.
-
 ## Usage
 
 Run `dircifrar -h` or `dircifrar <command> -h` for online documentation.
@@ -144,10 +140,19 @@ the next 2 hex digits another directory name under the first one, and
 the remaining 60 hex digits are interpreted as a file name under the
 second directory containing the encrypted file or subdirectory.
 
-## Dependencies
+## Installation
 
-`dircifrar` is implemented in Python3 and require Python 3.6 or above.
-It uses the cryptographic primitives from:
+```
+pip install dircifrar
+```
+
+
+`dircifrar` is implemented in Python3 and requires Python 3.6 or above.
+We recommend the Anaconda distribution:
+
+https://www.anaconda.com/distribution/
+
+which has everything needed by `dircifrar` except **PyNaCl**:
 
 https://pynacl.readthedocs.io/en/stable/
 
@@ -155,9 +160,11 @@ which is a Python binding to **libsodium**:
 
 https://libsodium.gitbook.io/doc/
 
-which in turn is a fork of **NaCl**:
+```
+pip install pynacl
+```
 
-http://nacl.cr.yp.to/
+should automatically install the pre-compiled binary of **libsodium**.
 
 --------------------------------
 &copy; 2018-2019  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)
