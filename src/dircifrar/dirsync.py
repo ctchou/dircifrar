@@ -147,8 +147,8 @@ class DirSync(object):
     """ Object for directory synchronization and encryption """
 
     def __init__(self, local_dir, remote_dir, **options):
-        self.local_dir = local_dir
-        self.remote_dir = remote_dir
+        self.local_dir = Path(local_dir).resolve()
+        self.remote_dir = Path(remote_dir).resolve()
         self.options = options
         self.local_api = open_dirapi(self.local_dir)
         test_key = options.get('test_key', None)

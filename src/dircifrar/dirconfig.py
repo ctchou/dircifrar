@@ -66,14 +66,7 @@ def get_password(dir_root):
     return password.encode('utf-8')
 
 def init_config(dir_type, dir_path, exclude, overwrite):
-    if dir_type == 'plain':
-        config = make_plain_config(__pkg_version__, exclude)
-    elif dir_type == 'crypt':
-        password = get_password(dir_path)
-        config = make_crypt_config(__pkg_version__, exclude, password)
-    else:
-        raise ValueError(f"Error: {dir_type} is not a supported directory type")
-    dir_path = Path(dir_path)
+    dir_path = Path(dir_path).resolve()
     if not dir_path.is_dir():
         raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
     config_file = dir_path / __config_filename__
@@ -82,11 +75,17 @@ def init_config(dir_type, dir_path, exclude, overwrite):
             print(f"Warning: existing {config_file} is overwritten")
         else:
             raise ValueError(f"Error: {config_file} already exists")
+    if dir_type == 'plain':
+        config = make_plain_config(__pkg_version__, exclude)
+    elif dir_type == 'crypt':
+        password = get_password(dir_path)
+        config = make_crypt_config(__pkg_version__, exclude, password)
+    else:
+        raise ValueError(f"Error: {dir_type} is not a supported directory type")
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=4)
 
 def open_dirapi(dir_path, test_key=None):
-    dir_path = Path(dir_path)
     if not dir_path.is_dir():
         raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
 
