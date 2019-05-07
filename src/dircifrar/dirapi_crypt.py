@@ -127,8 +127,8 @@ class DirCrypt(object):
         try:
             metadata = file_decrypt(self.key, crypt_file, dst_file, metadata_test=md_test)
             _, mode, mtime, _ = dest_metadata(metadata)
-            os.chmod(dst_file, stat.S_IMODE(mode), follow_symlinks=False)
-            os.utime(dst_file, ns=(mtime, mtime), follow_symlinks=False)
+            os.chmod(dst_file, stat.S_IMODE(mode))
+            os.utime(dst_file, ns=(mtime, mtime))
             res.succ_copied_files.append(path)
         except e:
             res.fail_copied_files.append((path, str(e)))

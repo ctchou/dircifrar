@@ -51,10 +51,8 @@ def check_dirs(dir1, dir2):
     mode1 = dir1.stat().st_mode
     mode2 = dir2.stat().st_mode
     assert mode1 == mode2
-    names1 = [ e.name for e in os.scandir(dir1)
-               if e.is_file(follow_symlinks=False) or e.is_dir(follow_symlinks=False) ]
-    names2 = [ e.name for e in os.scandir(dir2)
-               if e.is_file(follow_symlinks=False) or e.is_dir(follow_symlinks=False) ]
+    names1 = [ e.name for e in os.scandir(dir1) if (e.is_file or e.is_dir) and not e.is_symlink() ]
+    names2 = [ e.name for e in os.scandir(dir2) if (e.is_file or e.is_dir) and not e.is_symlink() ]
     for n in names1:
         if n in names2:
             names2.remove(n)

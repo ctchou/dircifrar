@@ -82,7 +82,7 @@ class DirPlain(object):
         plain_dir = self.dir_root / path
         try:
             os.mkdir(plain_dir)
-            os.chmod(plain_dir, stat.S_IMODE(mode), follow_symlinks=False)
+            os.chmod(plain_dir, stat.S_IMODE(mode))
             res.succ_added_dirs.append(path)
         except e:
             res.fail_added_dirs.append((path, str(e)))
