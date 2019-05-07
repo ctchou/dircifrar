@@ -70,13 +70,13 @@ directly, without decryption .  The `<exclude>` patterns recorded in
 
 synchronize `<local_dir>` and `<remote_dir>`, where `push` makes
 `<remote_dir>` the same as `<local_dir>` and `pull` makes
-`<local_dir>` the same as `<remote_dir>`.  Either or both of
-`<local_dir>` and `<remote_dir>` can be unencrypted or encrypted,
-depending on the information recorded in their respective
-`.dircifrar_config.json` file.  If a directory is encrypted, the user
-is prompted for the password that is set up by `dircifrar init-crypt`.
-The lack of a `.dircifrar_config.json` file makes the directory to be
-considered unencrypted.
+`<local_dir>` the same as `<remote_dir>`.  The `<remote_dir>` can be
+either encrypted or unencrypted, depending on the information stored
+in its `.dircifrar_config.json` file.  The `<local_dir>` should be
+unencrypted.  If a directory is encrypted, the user is prompted for
+the password that is set up by `dircifrar init-crypt`.  The lack of a
+`.dircifrar_config.json` file makes the directory to be considered
+unencrypted.
 
 The directory synchronization algorithm works as follows for `dircifrar push`:
 

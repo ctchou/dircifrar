@@ -151,6 +151,7 @@ class DirSync(object):
         self.remote_dir = Path(remote_dir).resolve()
         self.options = options
         self.local_api = open_dirapi(self.local_dir)
+        assert self.local_api.dir_type == 'plain'
         test_key = options.get('test_key', None)
         self.remote_api = open_dirapi(self.remote_dir, test_key=test_key)
 
