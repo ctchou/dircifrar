@@ -1,6 +1,8 @@
 
 # dircifrar: A directory synchronization and encryption tool
 
+--------------------------------
+
 `dircifrar` is a simple command-line tool for synchronizing and
 encrypting directories containing files and subdirectories.  The files
 and subdirectories are encrypted individually and the pathnames are
@@ -166,5 +168,11 @@ pip install pynacl
 
 should automatically install the pre-compiled binary of **libsodium**.
 
+## Acknowledgements
+
+I am grateful to Pascalin Amabegnon and Gaspar Mora Porta for testing
+this program and suggesting improvements.
+
 --------------------------------
+
 &copy; 2018-2019  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)
