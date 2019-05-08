@@ -61,9 +61,13 @@ def unwrap_crypt_config(config, password):
     version = unwrapped_master_key[KEYBYTES:].decode('utf-8')
     return (master_key, version)
 
-def get_password(dir_root):
-    password = getpass(prompt=f"{__pkg_name__} password for {dir_root}: ")
-    return password.encode('utf-8')
+def choose_password(dir_root):
+    password_0 = getpass(prompt=f"Choose  {__pkg_name__} password for {dir_root}: ")
+    password_1 = getpass(prompt=f"Confirm {__pkg_name__} password for {dir_root}: ")
+    if password_0 == password_1:
+        return password_0.encode('utf-8')
+    else:
+        raise ValueError(f"Error: you typed two different passowords")
 
 def init_config(dir_type, dir_path, exclude, overwrite):
     dir_path = Path(dir_path).resolve()
@@ -78,12 +82,16 @@ def init_config(dir_type, dir_path, exclude, overwrite):
     if dir_type == 'plain':
         config = make_plain_config(__pkg_version__, exclude)
     elif dir_type == 'crypt':
-        password = get_password(dir_path)
+        password = choose_password(dir_path)
         config = make_crypt_config(__pkg_version__, exclude, password)
     else:
         raise ValueError(f"Error: {dir_type} is not a supported directory type")
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=4)
+
+def ask_password(dir_root):
+    password = getpass(prompt=f"Type {__pkg_name__} password for {dir_root}: ")
+    return password.encode('utf-8')
 
 def open_dirapi(dir_path, test_key=None):
     if not dir_path.is_dir():
@@ -115,7 +123,7 @@ def open_dirapi(dir_path, test_key=None):
     if dir_type == 'plain':
         return DirPlain(dir_path, version, exclude, config)
     elif dir_type == 'crypt':
-        password = get_password(dir_path)
+        password = ask_password(dir_path)
         master_key, version_1 = unwrap_crypt_config(config, password)
         if version_1 != version:
             raise ValueError(f"Error: {config_file} version check failed")
