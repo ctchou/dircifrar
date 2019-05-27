@@ -2,7 +2,6 @@
 from dircifrar.dirconfig import (
     wrap_master_key,
     unwrap_master_key,
-    rewrap_master_key,
 )
 from nacl.utils import random as randombytes
 from nacl.bindings import crypto_secretstream_xchacha20poly1305_KEYBYTES as KEYBYTES
@@ -35,7 +34,7 @@ def test_master_key_wrap(password_1, password_2, version_list_1, version_list_2)
     master_key_1a, version_1a = unwrap_master_key(wrap_1, password_1)
     assert master_key_1a == master_key
     assert version_1a == version_1
-    wrap_2 = rewrap_master_key(wrap_1, password_1, password_2, new_version=version_2)
+    wrap_2 = wrap_master_key(master_key, version_2, password_2)
     master_key_2a, version_2a = unwrap_master_key(wrap_2, password_2)
     assert master_key_2a == master_key
     assert version_2a == version_2

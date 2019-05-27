@@ -10,7 +10,10 @@ if sys.version_info < (3, 6):
     sys.stdout.write(f"Sorry, {__pkg_name__} requires Python 3.6 or above\n")
     sys.exit(1)
 
-from .dirconfig import init_config
+from .dirconfig import (
+    init_config,
+    crypt_change_password,
+)
 from .dirsync import DirSync
 import argparse
 import logging
@@ -66,6 +69,18 @@ def dirinit(command, prog, argv):
     dir_type = 'crypt' if command == 'init-crypt' else 'plain'
     init_config(dir_type, **vars(args))
 
+def dirmod(command, prog, argv):
+    parser = argparse.ArgumentParser(
+        prog=prog,
+        description="""
+    change-password: Change the password of an encrypted directory
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('dir_path',
+                        help='directory path')
+    args = parser.parse_args(argv)
+    crypt_change_password(**vars(args))
+
 def main():
     parser = argparse.ArgumentParser(
         usage=f"{__pkg_name__} command [<args>]",
@@ -78,6 +93,7 @@ def main():
                         choices=[
                             'push', 'pull',
                             'init-plain', 'init-crypt',
+                            'change-password',
                         ],
                         help='command')
     command = parser.parse_args(sys.argv[1:2]).command
@@ -87,6 +103,8 @@ def main():
         dirsync(command, prog, argv)
     elif command in ['init-plain', 'init-crypt']:
         dirinit(command, prog, argv)
+    elif command in ['change-password']:
+        dirmod(command, prog, argv)
     else:
         sys.stdout.write(f"Invalid command: {command}\n")
         sys.exit(1)
