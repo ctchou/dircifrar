@@ -61,36 +61,17 @@ def make_plain_config(version, exclude):
     }
 
 def make_crypt_config(version, exclude, password):
-    kdf_salt = randombytes(argon2i.SALTBYTES)
-    wrapping_key = argon2i.kdf(KEYBYTES, password, kdf_salt,
-                               opslimit=argon2i.OPSLIMIT_MODERATE,
-                               memlimit=argon2i.MEMLIMIT_MODERATE)
-    box = SecretBox(wrapping_key)
     master_key = randombytes(KEYBYTES)
-    version_bytes = version.encode('utf-8')
-    wrapped_master_key = box.encrypt(master_key + version_bytes)
+    wrap = wrap_master_key(master_key, version, password)
     return {
         'dir_type': 'crypt',
         'version': version,
         'exclude': exclude,
-        'kdf_opslimit': argon2i.OPSLIMIT_MODERATE,
-        'kdf_memlimit': argon2i.MEMLIMIT_MODERATE,
-        'kdf_salt': kdf_salt.hex(),
-        'wrapped_master_key': wrapped_master_key.hex(),
+        'master_key_wrap': wrap,
     }
 
-def unwrap_crypt_config(config, password):
-    kdf_opslimit = config['kdf_opslimit']
-    kdf_memlimit = config['kdf_memlimit']
-    kdf_salt = bytes.fromhex(config['kdf_salt'])
-    wrapped_master_key = bytes.fromhex(config['wrapped_master_key'])
-    wrapping_key = argon2i.kdf(KEYBYTES, password, kdf_salt,
-                               opslimit=kdf_opslimit, memlimit=kdf_memlimit)
-    box = SecretBox(wrapping_key)
-    unwrapped_master_key = box.decrypt(wrapped_master_key)
-    master_key = unwrapped_master_key[0:KEYBYTES]
-    version = unwrapped_master_key[KEYBYTES:].decode('utf-8')
-    return (master_key, version)
+def open_crypt_config(config, password):
+    return unwrap_master_key(config['master_key_wrap'], password)
 
 def ask_password(dir_root):
     password = getpass(prompt=f"Type {__pkg_name__} password for {dir_root}: ")
@@ -157,7 +138,7 @@ def open_dirapi(dir_path, test_key=None):
         return DirPlain(dir_path, version, exclude, config)
     elif dir_type == 'crypt':
         password = ask_password(dir_path)
-        master_key, version_1 = unwrap_crypt_config(config, password)
+        master_key, version_1 = open_crypt_config(config, password)
         if version_1 != version:
             raise ValueError(f"Error: {config_file} version check failed")
         return DirCrypt(dir_path, version, exclude, config, master_key)
