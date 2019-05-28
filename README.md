@@ -19,9 +19,10 @@ reordered, duplicated, or moved without being detected.
 The intended usage of `dircifrar` is to encrypt a directory before
 uploading the encrypted version to a cloud storage such as Dropbox and
 Google Drive.  This can be achieved by placing the encrypted directory
-inside the cloud folder.  The cloud storage's automatic
-synchronization should then take care of the rest.  Note that
-`dircifrar` assumes there is a plaintext directory to synchronize
+inside the cloud folder on the local machine (for example, the
+`Dropbox` folder in the case of Dropbox).  The cloud storage's
+automatic synchronization should then take care of the rest.  Note
+that `dircifrar` assumes there is a plaintext directory to synchronize
 against.  Needless to say, `dircifar` cannot protect that plaintext
 directory, which should be protected by disk encryption.
 
@@ -90,6 +91,13 @@ changes the password of `<dir_path>`, which must be an encrypted
 directory set up using `dircifrar init-crypt`.  The user is first
 prompted for the old password and then for the new password, which
 needs to be typed in twice.
+
+Note that `dircifrar change-password <dir_path>` does not change the
+master key.  Hence the already encrypted files and subdirectories in
+`<dir_path>` need not be re-encrypted.  In contrast, `dircifrar
+init-crypt` always generates a new master key, which renders all
+already encrypted files and subdirectories unusable.  Note also that
+there is no way to recover a forgotten or lost password.
 
 ```
     dircifrar push [-v] [-d] <local_dir> <remote_dir>
@@ -199,7 +207,17 @@ https://libsodium.gitbook.io/doc/
 pip install pynacl
 ```
 
-should automatically install the pre-compiled binary of **libsodium**.
+should automatically install the pre-compiled binary of libsodium.
+
+The tests use **pytest**:
+
+https://docs.pytest.org/en/latest/
+
+and **Hypothesis**:
+
+https://hypothesis.readthedocs.io/en/latest/index.html
+
+which need to be installed only if you want to run the tests.
 
 ## Acknowledgements
 
