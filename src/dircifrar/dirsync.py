@@ -141,6 +141,8 @@ class AbsDirSync(object):
                 self.dst_api.make_dir(path, src_mode, res)
             elif (src_type == 'FILE'):
                 self.copy_file(path, res)
+        self.src_api.output_paths()
+        self.dst_api.output_paths()
         return res
 
 class DirSync(object):

@@ -12,8 +12,7 @@ from nacl.bindings import (
 )
 from nacl.hash import generichash
 from pathlib import Path
-import os
-import tempfile
+import os, io, tempfile
 
 exp2_32 = 2 ** 32
 exp2_64 = 2 ** 64
@@ -25,10 +24,10 @@ def file_encrypt(key, plain_file, crypt_file, metadata, chunk_size):
     assert chunk_size >= 0 and chunk_size < exp2_32
     assert plain_size >= 0 and plain_size < exp2_64
     with tempfile.NamedTemporaryFile(mode='wb', dir=os.path.dirname(crypt_file)) as crypt_fp:
-        descriptor = \
-            metadata_size.to_bytes(4, byteorder='little', signed=False) + \
-            chunk_size.to_bytes(4, byteorder='little', signed=False) + \
-            plain_size.to_bytes(8, byteorder='little', signed=False)
+        descriptor = (
+            metadata_size.to_bytes(4, byteorder='little', signed=False) +
+            chunk_size.to_bytes(4, byteorder='little', signed=False) +
+            plain_size.to_bytes(8, byteorder='little', signed=False) )
         crypt_fp.write(descriptor)
         state = crypto_state()
         header = crypto_init_push(state, key)
@@ -78,6 +77,55 @@ def file_decrypt(key, crypt_file, plain_file, metadata_only=False, metadata_test
                 os.remove(plain_file)
             os.link(plain_fp.name, plain_file)
         return metadata
+
+def bytes_encrypt(key, plain_bytes, crypt_file, chunk_size):
+    plain_size = len(plain_bytes)
+    assert chunk_size >= 0 and chunk_size < exp2_32
+    assert plain_size >= 0 and plain_size < exp2_64
+    with tempfile.NamedTemporaryFile(mode='wb', dir=os.path.dirname(crypt_file)) as crypt_fp:
+        descriptor = (
+            chunk_size.to_bytes(4, byteorder='little', signed=False) +
+            plain_size.to_bytes(8, byteorder='little', signed=False) )
+        crypt_fp.write(descriptor)
+        state = crypto_state()
+        header = crypto_init_push(state, key)
+        crypt_fp.write(header)
+        ciphertext = crypto_push(state, descriptor)
+        crypt_fp.write(ciphertext)
+        with io.BytesIO(plain_bytes) as plain_fp:
+            while plain_size > 0:
+                plaintext = plain_fp.read(chunk_size)
+                assert len(plaintext) > 0
+                tag = crypto_TAG_MESSAGE if plain_size >= chunk_size else crypto_TAG_FINAL
+                ciphertext = crypto_push(state, plaintext, tag=tag)
+                crypt_fp.write(ciphertext)
+                plain_size -= chunk_size
+        if os.path.exists(crypt_file):
+            os.remove(crypt_file)
+        os.link(crypt_fp.name, crypt_file)
+
+def bytes_decrypt(key, crypt_file):
+    with open(crypt_file, 'rb') as crypt_fp:
+        descriptor = crypt_fp.read(12)
+        chunk_size = int.from_bytes(descriptor[0:4], byteorder='little', signed=False)
+        plain_size = int.from_bytes(descriptor[4:12], byteorder='little', signed=False)
+        header = crypt_fp.read(crypto_HEADERBYTES)
+        state = crypto_state()
+        crypto_init_pull(state, header, key)
+        ciphertext = crypt_fp.read(12 + crypto_ABYTES)
+        plaintext, tag = crypto_pull(state, ciphertext)
+        assert plaintext == descriptor
+        with io.BytesIO() as plain_fp:
+            while plain_size > 0:
+                ciphertext = crypt_fp.read(chunk_size + crypto_ABYTES)
+                plaintext, tag = crypto_pull(state, ciphertext)
+                assert len(plaintext) > 0
+                plain_fp.write(plaintext)
+                if tag == crypto_TAG_FINAL:
+                    break
+                plain_size -= chunk_size
+            plain_bytes = plain_fp.getvalue()
+        return plain_bytes
 
 def path_encode(path):
     return b'\x00'.join([ part.encode('utf-8') for part in path.parts ])

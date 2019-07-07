@@ -3,6 +3,8 @@ from .__init__ import (
     __pkg_name__,
     __pkg_version__,
     __config_filename__,
+    __crypt_metafile__,
+    __crypt_dirname__,
 )
 from .dirapi_plain import DirPlain
 from .dirapi_crypt import DirCrypt
@@ -74,8 +76,9 @@ def choose_password(dir_root):
 
 def init_config(dir_type, dir_path, exclude, overwrite):
     dir_path = Path(dir_path).resolve()
-    if not dir_path.is_dir():
-        raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
+    if dir_path.exists() and not dir_path.is_dir():
+        raise ValueError(f"Error: {dir_path} exists but is not a directory")
+    dir_path.mkdir(parents=True, exist_ok=True)
     config_file = dir_path / __config_filename__
     if config_file.is_file():
         if overwrite:
@@ -91,6 +94,9 @@ def init_config(dir_type, dir_path, exclude, overwrite):
         raise ValueError(f"Error: {dir_type} is not a supported directory type")
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=4)
+    if dir_type == 'crypt':
+        crypt_dir = dir_path / __crypt_dirname__
+        crypt_dir.mkdir(parents=True, exist_ok=True)
 
 def crypt_change_password(dir_path):
     dir_path = Path(dir_path).resolve()
@@ -100,10 +106,13 @@ def crypt_change_password(dir_path):
     try:
         with open(config_file, 'r') as cf:
             config = json.load(cf)
+        assert config['dir_type'] == 'crypt'
         old_version = config['version']
         old_wrap = config['master_key_wrap']
     except:
         raise ValueError(f"Error: {dir_path} is not a well-formed encrypted directory")
+    if old_version <= '0.0.1':
+        raise ValueError(f"Error: the encrypted directory is from version 0.0.1 or earlier, which is not supported anymore")
     old_password = ask_password(dir_path)
     master_key, old_version_1 = unwrap_master_key(old_wrap, old_password)
     if old_version_1 != old_version:
@@ -142,6 +151,8 @@ def open_dirapi(dir_path, test_key=None):
         dir_type = 'plain'
         version = '0.0.0'
         exclude = []
+    if dir_type == 'crypt' and version <= '0.0.1':
+        raise ValueError(f"Error: the encrypted directory is from version 0.0.1 or earlier, which is not supported anymore")
     exclude = set(exclude + [__config_filename__])
     exclude = [ re.compile(pat) for pat in exclude ]
     if dir_type == 'plain':
@@ -154,3 +165,12 @@ def open_dirapi(dir_path, test_key=None):
         return DirCrypt(dir_path, version, exclude, config, master_key)
     else:
         raise ValueError(f"Error: {dir_type} is not a supported directory type")
+
+def crypt_rebuild_metafile(dir_path):
+    dir_path = Path(dir_path).resolve()
+    if not dir_path.is_dir():
+        raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
+    crypt_api = open_dirapi(dir_path)
+    assert(crypt_api.dir_type == 'crypt')
+    crypt_api.collect_paths(force_collect=True)
+    crypt_api.output_paths()

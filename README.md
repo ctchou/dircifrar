@@ -13,18 +13,19 @@ encryption**](https://en.wikipedia.org/wiki/Authenticated_encryption)
 with a 256-bit secret key from the
 [**libsodium**](https://libsodium.gitbook.io/doc/) library.
 Therefore, in addition to the confidentiality of their contents and
-metadata, no files or subdirectories can be modified, truncated,
-reordered, duplicated, or moved without being detected.
+metadata, no encrypted files can be modified, truncated, duplicated,
+moved, or renamed without being detected.  However, the deletion of
+encrypted files are not protected against.
 
-The intended usage of `dircifrar` is to encrypt a directory before
-uploading the encrypted version to a cloud storage such as Dropbox and
-Google Drive.  This can be achieved by placing the encrypted directory
-inside the cloud folder on the local machine (for example, the
+The intended usage of `dircifrar` is to encrypt a plaintext directory
+before uploading the encrypted version to a cloud storage such as
+Dropbox and Google Drive.  This is achieved by synchronizing the
+plaintext directory and an encrypted directory, with the latter being
+placed inside the cloud folder on the local machine (for example, the
 `Dropbox` folder in the case of Dropbox).  The cloud storage's
-automatic synchronization should then take care of the rest.  Note
-that `dircifrar` assumes there is a plaintext directory to synchronize
-against.  Needless to say, `dircifar` cannot protect that plaintext
-directory, which should be protected by disk encryption.
+automatic synchronization should then take care of the rest.  Needless
+to say, `dircifar` cannot protect the plaintext directory, which
+should be protected by disk encryption.
 
 Currently `dircifrar` handles only ordinary files and ignores all
 symbolic links.  So far it has been tested on macOS and Linux only.
@@ -110,8 +111,8 @@ synchronize `<local_dir>` and `<remote_dir>`, where `push` makes
 either encrypted or unencrypted, depending on the information stored
 in its `.dircifrar_config.json` file.  The `<local_dir>` should be
 unencrypted.  If a directory is encrypted, the user is prompted for
-the password that is set up by `dircifrar init-crypt`.  The lack of a
-`.dircifrar_config.json` file makes the directory to be considered
+the password that is set up by `dircifrar init-crypt`.  The absence of
+a `.dircifrar_config.json` file makes the directory to be considered
 unencrypted.
 
 The directory synchronization algorithm works as follows for `dircifrar push`:
@@ -131,11 +132,37 @@ directories are reversed.
 
 The files/subdirectories specified by the `-x <exclude>` when the
 directories are set up, are ignored by the synchronization algorithm,
-which in addition also ignores the `.dircifrar_config.json` files.
+which in addition also ignores the `.dircifrar_config.json` file.
+
+If `<remote_dir>` is encrypted, the encrypted contents are not stored
+directly under `<remote_dir>`.  Rather, they are stored under the
+subdirectory `<remote_dir>/dircifrar_cryptdir`.  This extra level of
+indirection allows the `dircifrar_cryptdir` subdirectory to take
+advantage of Dropbox's [**Smart
+Sync**](https://help.dropbox.com/installs-integrations/sync-uploads/smart-sync)
+feature by marking its contents as "online-only", thus saving space on
+the local machine.  A separate encrypted file,
+`<remote_dir>/dircifrar_metafile`, records the metadata of the files
+in `dircifrar_cryptdir`, so that `dircifrar push` and `dircifrar pull`
+do not have to probe the files in `dircifrar_cryptdir`.  Such probing
+would cause the contents of `dircifrar_cryptdir` to be downloaded even
+if they have been marked as "online-only" and thus negate the benefits
+of Smart Sync.  If `dircifrar_metafile` and the contents of
+`dircifrar_cryptdir` ever get out of sync, the former can be
+regenerated using:
+
+```
+    dircifrar rebuild-metafile <remote_dir>
+```
+
+But note that the above operation does need to probe every file in
+`dircifrar_cryptdir`.
+
 
 ## File encryption
 
-Here are some details about how `dircifrar` encrypts a file or subdirectory:
+Here are some details about how `dircifrar` encrypts a file or
+subdirectory:
 
 * Each encrypted file begins with three (plaintext) unsigned integers:
 

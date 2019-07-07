@@ -3,6 +3,9 @@ from dircifrar.dirsync import (
     DirSync,
     time_resolution_ns,
 )
+from dircifrar.__init__ import (
+    __crypt_metafile__,
+)
 from nacl.utils import random as randombytes
 from nacl.bindings import crypto_secretstream_xchacha20poly1305_KEYBYTES as KEYBYTES
 from pathlib import Path
@@ -76,8 +79,9 @@ def check_dirs(dir1, dir2):
 @given(
     dtree=dtree,
     test_crypt=booleans(),
+    force_collect=booleans(),
 )
-def test_push_pull(dtree, test_crypt):
+def test_push_pull(dtree, test_crypt, force_collect):
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)
         local_dir_1 = tmp_dir / 'local_dir_1'
@@ -90,6 +94,8 @@ def test_push_pull(dtree, test_crypt):
         remote_key = randombytes(KEYBYTES) if test_crypt else None
         ds = DirSync(local_dir_1, remote_dir, test_key=remote_key)
         ds.do('push')
+        if test_crypt and force_collect:
+            os.remove(remote_dir / __crypt_metafile__)
         time.sleep(0.001)
         ds = DirSync(local_dir_2, remote_dir, test_key=remote_key)
         ds.do('pull')
