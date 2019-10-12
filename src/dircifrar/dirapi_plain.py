@@ -39,9 +39,6 @@ class DirPlain(object):
                                             'mtime': st.st_mtime_ns,
                                             'ctime': st.st_ctime_ns }
 
-    def output_paths(self):
-        return
-
     def get_path_type(self, path):
         if path in self.included:
             meta = self.included[path]

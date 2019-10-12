@@ -13,7 +13,7 @@ if sys.version_info < (3, 6):
 from .dirconfig import (
     init_config,
     crypt_change_password,
-    crypt_rebuild_metafile,
+    crypt_rebuild_meta,
 )
 from .dirsync import DirSync
 import argparse
@@ -75,7 +75,7 @@ def dirmod(command, prog, argv):
         prog=prog,
         description="""
      change-password: Change the password of an encrypted directory
-    rebuild-metafile: Rebuild the metafile of an encrypted directory
+     rebuild-meta:    Rebuild the meta info of an encrypted directory
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('dir_path',
@@ -83,8 +83,8 @@ def dirmod(command, prog, argv):
     args = parser.parse_args(argv)
     if command == 'change-password':
         crypt_change_password(**vars(args))
-    elif command == 'rebuild-metafile':
-        crypt_rebuild_metafile(**vars(args))
+    elif command == 'rebuild-meta':
+        crypt_rebuild_meta(**vars(args))
 
 def main():
     parser = argparse.ArgumentParser(
@@ -98,7 +98,7 @@ def main():
                         choices=[
                             'push', 'pull',
                             'init-plain', 'init-crypt',
-                            'change-password', 'rebuild-metafile',
+                            'change-password', 'rebuild-meta',
                         ],
                         help='command')
     command = parser.parse_args(sys.argv[1:2]).command
@@ -108,7 +108,7 @@ def main():
         dirsync(command, prog, argv)
     elif command in ['init-plain', 'init-crypt']:
         dirinit(command, prog, argv)
-    elif command in ['change-password', 'rebuild-metafile']:
+    elif command in ['change-password', 'rebuild-meta']:
         dirmod(command, prog, argv)
     else:
         sys.stdout.write(f"Invalid command: {command}\n")

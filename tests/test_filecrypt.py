@@ -2,8 +2,6 @@
 from dircifrar.filecrypt import (
     file_encrypt,
     file_decrypt,
-    bytes_encrypt,
-    bytes_decrypt,
     path_encode,
     path_decode,
     path_hash,
@@ -66,26 +64,6 @@ def test_file_crypt(metadata_size, num_chunks, odd_chunk_size, crypt_exists, pla
         with open(plain_file_1, 'rb') as plain_1:
             plain_data_1 = plain_1.read()
             assert plain_data_1 == plain_data
-
-@given(
-    num_chunks=integers(num_chunks_min, num_chunks_max),
-    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
-    crypt_exists=booleans(),
-)
-def test_bytes_crypt(num_chunks, odd_chunk_size, crypt_exists):
-    plain_size = chunk_size * num_chunks + odd_chunk_size
-    assume(plain_size >= 0)
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
-        key = randombytes(KEYBYTES)
-        plain_data = randombytes(plain_size)
-        crypt_file = tmp_dir / crypt_name
-        if crypt_exists:
-            with open(crypt_file, 'wb') as crypt:
-                crypt.write(some_data)
-        bytes_encrypt(key, plain_data, crypt_file, chunk_size)
-        plain_data_1 = bytes_decrypt(key, crypt_file)
-        assert plain_data_1 == plain_data
 
 @given(
     names=lists(text(alphabet=characters(

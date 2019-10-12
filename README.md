@@ -20,12 +20,12 @@ encrypted files are not protected against.
 The intended usage of `dircifrar` is to encrypt a plaintext directory
 before uploading the encrypted version to a cloud storage such as
 Dropbox and Google Drive.  This is achieved by synchronizing the
-plaintext directory and an encrypted directory, with the latter being
+plaintext directory and an encrypted directory, where the latter is
 placed inside the cloud folder on the local machine (for example, the
 `Dropbox` folder in the case of Dropbox).  The cloud storage's
 automatic synchronization should then take care of the rest.  Needless
 to say, `dircifar` cannot protect the plaintext directory, which
-should be protected by disk encryption.
+should be protected by disk encryption on the local machine.
 
 Currently `dircifrar` handles only ordinary files and ignores all
 symbolic links.  So far it has been tested on macOS and Linux only.
@@ -46,7 +46,8 @@ initializes an unencrypted directory with pathname `<dir_path>`.
 There can be any number of `-x <exclude>` specifying file/directory
 names under `<dir_path>` which `dircifrar` will subsequently ignore
 when performing synchronization and encryption.  `<exclude>` can be a
-Python regular expression.
+Python regular expression.  For example, the `.DS_Store` directories
+on macOS should typically be excluded.
 
 The result of this initialization is stored in a JSON file named
 `.dircifrar_config.json` under `<dir_path>`.  `dircifrar init-plain`
@@ -71,7 +72,7 @@ a randomly generated 256-bit *master key*, which in turn is used in
 the actual file and subdirectory encryptions.  The encryption of the
 master key uses libsodium's secretbox, which uses XSalsa20 + Poly1305:
 
-https://libsodium.gitbook.io/doc/secret-key_cryptography/authenticated_encryption
+https://libsodium.gitbook.io/doc/secret-key_cryptography/secretbox
 
 The salt, the key derivation parameters, and the encrypted master key
 are stored in the `.dircifrar_config.json` file under `<dir_path>`, so
@@ -136,27 +137,28 @@ which in addition also ignores the `.dircifrar_config.json` file.
 
 If `<remote_dir>` is encrypted, the encrypted contents are not stored
 directly under `<remote_dir>`.  Rather, they are stored under the
-subdirectory `<remote_dir>/dircifrar_cryptdir`.  This extra level of
-indirection allows the `dircifrar_cryptdir` subdirectory to take
+subdirectory `<remote_dir>/dircifrar_crypt`.  This extra level of
+indirection allows the `dircifrar_crypt` subdirectory to take
 advantage of Dropbox's [**Smart
 Sync**](https://help.dropbox.com/installs-integrations/sync-uploads/smart-sync)
 feature by marking its contents as "online-only", thus saving space on
-the local machine.  A separate encrypted file,
-`<remote_dir>/dircifrar_metafile`, records the metadata of the files
-in `dircifrar_cryptdir`, so that `dircifrar push` and `dircifrar pull`
-do not have to probe the files in `dircifrar_cryptdir`.  Such probing
-would cause the contents of `dircifrar_cryptdir` to be downloaded even
-if they have been marked as "online-only" and thus negate the benefits
-of Smart Sync.  If `dircifrar_metafile` and the contents of
-`dircifrar_cryptdir` ever get out of sync, the former can be
-regenerated using:
+the local machine.  A separate encrypted directory,
+`<remote_dir>/dircifrar_meta`, contains the metadata of the files and
+directories in `dircifrar_crypt`, so that `dircifrar push` and
+`dircifrar pull` do not have to probe the files in `dircifrar_crypt`.
+Such probing would cause the contents of `dircifrar_crypt` to be
+downloaded even if they have been marked as "online-only" and thus
+negate the benefits of Smart Sync.  Under normal circumstances,
+`dircifrar` will keep the contents of `dircifrar_crypt` and
+`dircifrar_meta` in sync.  If they ever get out of sync,
+`dircifrar_meta` can be regenerated using:
 
 ```
-    dircifrar rebuild-metafile <remote_dir>
+    dircifrar rebuild-meta <remote_dir>
 ```
 
-But note that the above operation does need to probe every file in
-`dircifrar_cryptdir`.
+But note that the above operation needs to probe every file in
+`dircifrar_crypt` and thus causes them to be downloaded.
 
 
 ## File encryption
@@ -203,7 +205,7 @@ BLAKE2b-based generic hash:
 
 https://libsodium.gitbook.io/doc/hashing/generic_hashing
 
-in the keyed hashing mode with the master key into 256 bits, which is
+in the keyed hashing mode using the master key into 256 bits, which is
 converted to 64 hex digits.  The first 2 hex digits are interpreted as
 a directory name, the next 2 hex digits another directory name under
 the first one, and the remaining 60 hex digits are interpreted as a
@@ -253,4 +255,4 @@ this program and suggesting improvements.
 
 --------------------------------
 
-&copy; 2018-2019  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)
+&copy; 2018-2020  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)
