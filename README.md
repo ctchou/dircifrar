@@ -219,12 +219,9 @@ pip install dircifrar
 ```
 
 
-`dircifrar` is implemented in Python3 and requires Python 3.6 or above.
-We recommend the Anaconda distribution:
-
-https://www.anaconda.com/distribution/
-
-which has everything needed by `dircifrar` except **PyNaCl**:
+`dircifrar` is implemented in Python3 and requires Python 3.6 or
+above.  The only Python library that `dircifrar` requires beyond a
+standard Python3 installation is **PyNaCl**:
 
 https://pynacl.readthedocs.io/en/stable/
 
@@ -232,11 +229,12 @@ which is a Python binding to **libsodium**:
 
 https://libsodium.gitbook.io/doc/
 
+Pynacl together with the pre-compiled binary of libsodium can be
+installed using:
+
 ```
 pip install pynacl
 ```
-
-should automatically install the pre-compiled binary of libsodium.
 
 The tests use **pytest**:
 
@@ -255,4 +253,4 @@ this program and suggesting improvements.
 
 --------------------------------
 
-&copy; 2018-2020  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)
+&copy; 2018-present  Ching-Tsun Chou (<chingtsun.chou@gmail.com>)

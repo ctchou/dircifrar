@@ -1,7 +1,7 @@
 """
 dircifrar
 A directory synchronization and encryption tool
-(c) 2019 Ching-Tsun Chou
+(c) 2018-present Ching-Tsun Chou
 MIT license (see LICENSE.txt)
 """
 
