@@ -40,11 +40,13 @@ def dirsync(command, prog, argv):
     parser.add_argument('local_dir',
                         help='local directory (unencrypted)')
     parser.add_argument('remote_dir',
-                        help='remote directory (encrypted)')
+                        help='remote directory (encrypted or unencrypted)')
     parser.add_argument('-v', '--verbose', action='store_true', default=False,
                         help='verbose output')
     parser.add_argument('-d', '--diffonly', action='store_true', default=False,
                         help='only compute diffs between local_dir and remote_dir')
+    parser.add_argument('-p', '--password', type=str, default=None,
+                        help='password for the encrypted directory')
     args = parser.parse_args(argv)
     ds = DirSync(**vars(args))
     res = ds.do(command)
