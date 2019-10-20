@@ -48,7 +48,7 @@ def dirsync(command, prog, argv):
     args = parser.parse_args(argv)
     ds = DirSync(**vars(args))
     res = ds.do(command)
-    if args.verbose:
+    if args.verbose or args.diffonly:
         logger = make_default_logger()
         res.output(logger)
 

@@ -8,14 +8,16 @@ time_resolution_ns = 10000  # in nanoseconds
 class DirCmp(object):
     """ Object for recording the result of directory comparison """
 
-    def __init__(self, src_dir, dst_dir, src_only, dst_only, changed, src_exc, dst_exc):
+    def __init__(self, src_dir, dst_dir, src_exc, dst_exc,
+                 src_only, dst_only, changed, truly_changed):
         self.src_dir = src_dir
         self.dst_dir = dst_dir
+        self.src_exc = src_exc
+        self.dst_exc = dst_exc
         self.src_only = src_only
         self.dst_only = dst_only
         self.changed = changed
-        self.src_exc = src_exc
-        self.dst_exc = dst_exc
+        self.truly_changed = truly_changed
 
     def output(self, logger):
         def src_file(path):
@@ -30,7 +32,7 @@ class DirCmp(object):
             logger.info(f"EXCLUDE: {dst_file(path)}")
         for path in sorted(self.src_only):
             logger.info(f"ADD: {src_file(path)} -> {dst_file(path)}")
-        for path in sorted(self.changed):
+        for path in sorted(self.truly_changed):
             logger.info(f"COPY: {src_file(path)} -> {dst_file(path)}")
         for path in sorted(self.dst_only):
             logger.info(f"REMOVE: {dst_file(path)}")
@@ -100,13 +102,16 @@ class AbsDirSync(object):
         src_only = src_inc - common_inc
         dst_only = dst_inc - common_inc
         changed = set()
+        truly_changed = set()
         for path in common_inc:
             src_type = self.src_api.get_path_type(path)
             dst_type = self.dst_api.get_path_type(path)
             if (src_type != dst_type) or (src_type == 'DIR') or self.compare_file_times(path):
                 changed.add(path)
+                if (src_type != dst_type) or (src_type == 'FILE'):
+                    truly_changed.add(path)
         return DirCmp(self.src_api.dir_root, self.dst_api.dir_root, \
-                      src_only, dst_only, changed, src_exc, dst_exc)
+                      src_exc, dst_exc, src_only, dst_only, changed, truly_changed)
 
     def sync_dirs(self):
         """ Synchronize two directories """
