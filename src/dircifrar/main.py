@@ -16,17 +16,20 @@ from .dirconfig import (
     crypt_rebuild_meta,
 )
 from .dirsync import DirSync
+from .watchsync import WatchSync
 import argparse
 import logging
 
-def make_default_logger():
+def make_logger(fmt):
     logger = logging.getLogger(__pkg_name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.WARNING)
     if not logger.handlers:
-        hdl = logging.StreamHandler(sys.stdout)
-        hdl.setFormatter(logging.Formatter('%(message)s'))
-        logger.addHandler(hdl)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(logging.Formatter(fmt))
+        logger.addHandler(handler)
     return logger
+
+# hdl.setFormatter(logging.Formatter('%(message)s'))
 
 def dirsync(command, prog, argv):
     parser = argparse.ArgumentParser(
@@ -48,11 +51,37 @@ def dirsync(command, prog, argv):
     parser.add_argument('-p', '--password', type=str, default=None,
                         help='password for the encrypted directory')
     args = parser.parse_args(argv)
-    ds = DirSync(**vars(args))
-    res = ds.do(command)
+    syncer = DirSync(**vars(args))
+    logger = make_logger('%(message)s')
     if args.verbose or args.diffonly:
-        logger = make_default_logger()
-        res.output(logger)
+        logger.setLevel(logging.INFO)
+    res = syncer.sync(command)
+    res.output(logger)
+
+def dirwatch(command, prog, argv):
+    parser = argparse.ArgumentParser(
+        prog=prog,
+        description="""
+    Keep two directories synchronized via push or pull
+    watch-push: watch local_dir and copy it to remote_dir whenever local_dir changes
+    watch-pull: watch remote_dir and copy it to local_dir whenever remote_dir changes
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('local_dir',
+                        help='local directory (unencrypted)')
+    parser.add_argument('remote_dir',
+                        help='remote directory (encrypted or unencrypted)')
+    parser.add_argument('-v', '--verbose', action='store_true', default=False,
+                        help='verbose output')
+    parser.add_argument('-d', '--diffonly', action='store_true', default=False,
+                        help='only compute diffs between local_dir and remote_dir')
+    parser.add_argument('-s', '--settle', type=float, default=0.2,
+                        help='Seconds to wait for changes to settle before synchronizing')
+    args = parser.parse_args(argv)
+    logger = make_logger('%(asctime)s %(message)s')
+    if args.verbose or args.diffonly:
+        logger.setLevel(logging.INFO)
+    WatchSync(logger, command, **vars(args))
 
 def dirinit(command, prog, argv):
     parser = argparse.ArgumentParser(
@@ -99,6 +128,7 @@ def main():
     parser.add_argument('command',
                         choices=[
                             'push', 'pull',
+                            'watch-push', 'watch-pull',
                             'init-plain', 'init-crypt',
                             'change-password', 'rebuild-meta',
                         ],
@@ -108,6 +138,8 @@ def main():
     argv = sys.argv[2:]
     if command in ['push', 'pull']:
         dirsync(command, prog, argv)
+    elif command in ['watch-push', 'watch-pull']:
+        dirwatch(command, prog, argv)
     elif command in ['init-plain', 'init-crypt']:
         dirinit(command, prog, argv)
     elif command in ['change-password', 'rebuild-meta']:

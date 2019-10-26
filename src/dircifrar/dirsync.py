@@ -172,7 +172,7 @@ class DirSync(object):
         self.push_file = push_file
         self.pull_file = pull_file
 
-    def do(self, command):
+    def sync(self, command):
         if command == 'push':
             ds = AbsDirSync(self.local_api, self.remote_api, self.push_file, self.options)
             return ds.sync_dirs()
