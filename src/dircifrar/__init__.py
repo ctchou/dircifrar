@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 __pkg_name__ = 'dircifrar'
-__pkg_version__ = '0.0.3'
+__pkg_version__ = '0.0.4'
 __pkg_license__ = 'MIT'
 __pkg_description__ = 'A directory synchronization and encryption tool'
 __pkg_author__ = 'Ching-Tsun Chou'

@@ -135,6 +135,26 @@ The files/subdirectories specified by the `-x <exclude>` when the
 directories are set up, are ignored by the synchronization algorithm,
 which in addition also ignores the `.dircifrar_config.json` file.
 
+```
+    dircifrar watch-push [-v] [-d] [-s settle] <local_dir> <remote_dir>
+    dircifrar watch-pull [-v] [-d] [-s settle] <local_dir> <remote_dir>
+```
+
+perform a `push` or `pull` as described above and then keep watching
+the `<local_dir>` or `<remote_dir>` for any changes and copy the changes
+to `<remote_dir>` or `<local_dir>`.  The directory watching is performed
+using the **Watchman** utility:
+
+https://facebook.github.io/watchman/
+
+The `-s` option specifies a (floating-point) _settle time_ in seconds,
+which is the time that `dircifrar` waits for changes to settle before
+performing the `push` or `pull`.  The default settle time is 0.2 sec.
+The `-v` and `-d` options have same meanings as in `push` or `pull`.
+Note that `dircifar watch-push/watch-pull` runs in an infinite loop
+and does not return to the shell prompt unless it is killed by Ctrl-C.
+So it should be run in a long-lived terminal window under (for example) tmux.
+
 If `<remote_dir>` is encrypted, the encrypted contents are not stored
 directly under `<remote_dir>`.  Rather, they are stored under the
 subdirectory `<remote_dir>/dircifrar_crypt`.  This extra level of
@@ -220,21 +240,32 @@ pip install dircifrar
 
 
 `dircifrar` is implemented in Python3 and requires Python 3.6 or
-above.  The only Python library that `dircifrar` requires beyond a
-standard Python3 installation is **PyNaCl**:
+above.  The only Python libraries that `dircifrar` requires beyond a
+standard Python3 installation are **PyNaCl**:
 
 https://pynacl.readthedocs.io/en/stable/
 
-which is a Python binding to **libsodium**:
+and, if `watch-push/watch-pull` is to be used, **Watchman**:
+
+https://facebook.github.io/watchman/
+
+**PyNaCl** is a Python binding to **libsodium**:
 
 https://libsodium.gitbook.io/doc/
 
-Pynacl together with the pre-compiled binary of libsodium can be
-installed using:
+and can be installed together with the pre-compiled binary of
+libsodium using:
 
 ```
 pip install pynacl
 ```
+
+Unfortunately, **Watchman** does not seem to be directly installable
+via `pip`.  Please see **Watchman** website given above for
+installation instructions.  After **Watchman** is installed, make sure
+that its Python binding `pywatchman` is in Python's search path.  As
+mentioned above, **Watchman** is needed only if `dircifar watch-push/watch-pull`
+is used.
 
 The tests use **pytest**:
 
