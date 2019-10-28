@@ -128,7 +128,7 @@ def crypt_change_password(dir_path):
 
 # The optional argument 'test_key' is only for testing.
 
-def open_dirapi(dir_path, password=None, test_key=None):
+def open_dirapi(dir_path, test_key=None):
     if not dir_path.is_dir():
         raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
 
@@ -160,11 +160,7 @@ def open_dirapi(dir_path, password=None, test_key=None):
     if dir_type == 'plain':
         return DirPlain(dir_path, version, exclude, config)
     elif dir_type == 'crypt':
-        if password == None:
-            password = ask_password(dir_path)
-        else:
-            assert isinstance(password, str)
-            password = password.encode('utf-8')
+        password = ask_password(dir_path)
         master_key, version_1 = unwrap_master_key(config['master_key_wrap'], password)
         if version_1 != version:
             raise ValueError(f"Error: {config_file} version check failed")

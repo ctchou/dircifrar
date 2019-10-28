@@ -48,8 +48,6 @@ def dirsync(command, prog, argv):
                         help='verbose output')
     parser.add_argument('-d', '--diffonly', action='store_true', default=False,
                         help='only compute diffs between local_dir and remote_dir')
-    parser.add_argument('-p', '--password', type=str, default=None,
-                        help='password for the encrypted directory')
     args = parser.parse_args(argv)
     syncer = DirSync(**vars(args))
     logger = make_logger('%(message)s')
