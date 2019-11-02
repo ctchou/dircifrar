@@ -65,7 +65,7 @@ class DirPlain(object):
     def remove_dir(self, path, res):
         plain_dir = self.dir_root / path
         try:
-            os.rmdir(plain_dir)
+            shutil.rmtree(plain_dir)
             res.succ_removed_dirs.append(path)
         except e:
             res.fail_removed_dirs.append((path, str(e)))
