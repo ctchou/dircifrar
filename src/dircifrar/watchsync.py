@@ -9,27 +9,16 @@ from .dirsync import DirSync
 from pathlib import Path
 import pywatchman, os, sys
 
-def patterns_to_terms(pats):
-    # convert a list of globs into the equivalent watchman expression term
-    if pats is None or len(pats) == 0:
-        return ['true']
-    terms = ['anyof']
-    for p in pats:
-        terms.append(['match', p, 'wholename', {'includedotfiles': True}])
-    return terms
-
 class Target(object):
     """ Base Class for a Target
 
-    We track the patterns that we consider to be the dependencies for
-    this target and establish a subscription for them.
+    We watch all files under root and establish a subscription for them.
 
     When we receive notifications for that subscription, we know that
     we should execute the command.
     """
     def __init__(self, syncer, command, logger):
         self.name = __pkg_name__
-        self.patterns = '**/*'
         self.syncer = syncer
         self.command = command
         self.logger = logger
@@ -37,7 +26,7 @@ class Target(object):
 
     def start(self, client, root):
         query = {
-            'expression': patterns_to_terms(self.patterns),
+            'expression': ['anyof', ['match', '**/*', 'wholename', {'includedotfiles': True}]],
             'fields': ['name']
         }
         watch = client.query('watch-project', root)
