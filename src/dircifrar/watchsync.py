@@ -49,8 +49,7 @@ class Target(object):
         if not (self.triggered or force):
             return
         self.triggered = False
-        res = self.syncer.sync(self.command)
-        res.output(self.logger)
+        self.syncer.sync(self.command)
 
 class WatchSync(object):
     """ Object for watching a directory for changes and copying the changes to another directory """
@@ -61,7 +60,7 @@ class WatchSync(object):
         self.local_dir = Path(local_dir).resolve()
         self.remote_dir = Path(remote_dir).resolve()
         self.settle = options.get('settle', 0.2)
-        self.syncer = DirSync(local_dir, remote_dir, **options)
+        self.syncer = DirSync(self.logger, self.local_dir, self.remote_dir, **options)
 
         if self.watch_command == 'watch-push':
             self.sync_command = 'push'

@@ -1,7 +1,7 @@
 
 from .dirconfig import open_dirapi
 from pathlib import Path
-import re
+import re, sys
 
 time_resolution_ns = 10000  # in nanoseconds
 
@@ -19,17 +19,18 @@ class DirCmp(object):
         self.changed = changed
         self.truly_changed = truly_changed
 
-    def output(self, logger):
+    def output(self, logger, verbose):
         def src_file(path):
             return self.src_dir / path
         def dst_file(path):
             return self.dst_dir / path
         logger.info(f"SOURCE DIR: {self.src_dir}")
         logger.info(f"TARGET DIR: {self.dst_dir}")
-        for path in sorted(self.src_exc):
-            logger.info(f"EXCLUDE: {src_file(path)}")
-        for path in sorted(self.dst_exc):
-            logger.info(f"EXCLUDE: {dst_file(path)}")
+        if verbose:
+            for path in sorted(self.src_exc):
+                logger.info(f"EXCLUDE: {src_file(path)}")
+            for path in sorted(self.dst_exc):
+                logger.info(f"EXCLUDE: {dst_file(path)}")
         for path in sorted(self.src_only):
             logger.info(f"ADD: {src_file(path)} -> {dst_file(path)}")
         for path in sorted(self.truly_changed):
@@ -40,40 +41,26 @@ class DirCmp(object):
 class DirSyncRes(object):
     """ Object for recording the result of directory synchronization """
 
-    def __init__(self):
-        self.succ_added_dirs = []
-        self.succ_copied_files = []
-        self.succ_removed_dirs = []
-        self.succ_removed_files = []
-        self.fail_added_dirs = []
-        self.fail_copied_files = []
-        self.fail_removed_dirs = []
-        self.fail_removed_files = []
+    def __init__(self, logger):
+        self.logger = logger
 
-    def output(self, logger):
-        def output_list(prefix, list):
-            for item in list:
-                if isinstance(item, tuple):
-                    logger.info(f"{prefix}: {item[0]} -> {item[1]}")
-                else:
-                    logger.info(f"{prefix}: {item}")
-        output_list("ADD", sorted(self.succ_added_dirs))
-        output_list("COPY", sorted(self.succ_copied_files))
-        output_list("REMOVE", sorted(self.succ_removed_dirs + self.succ_removed_files))
-        output_list("ADD FAILED", sorted(self.fail_added_dirs))
-        output_list("COPY FAILED", sorted(self.fail_copied_files))
-        output_list("REMOVE FAILED", sorted(self.fail_removed_dirs + self.fail_removed_files))
+    def log(self, msg, path, error=None):
+        if error:
+            self.logger.error(f'{msg}: {path} -> ERROR: {error}')
+        else:
+            self.logger.info(f'{msg}: {path}')
 
 class AbsDirSync(object):
     """ Object for comparing and synchronizing two directories """
 
-    def __init__(self, src_api, dst_api, copy_file, options):
-
+    def __init__(self, logger, src_api, dst_api, copy_file, options):
+        self.logger = logger
         self.src_api = src_api
         self.dst_api = dst_api
         self.copy_file = copy_file
 
         self.diffonly = options.get('diffonly', False)
+        self.verbose = options.get('verbose', False)
         self.use_ctime = options.get('use_ctime', False)
 
     def compare_file_times(self, path):
@@ -117,8 +104,9 @@ class AbsDirSync(object):
         """ Synchronize two directories """
         dcmp = self.compare_dirs()
         if self.diffonly:
-            return dcmp
-        res = DirSyncRes()
+            dcmp.output(self.logger, self.verbose)
+            return
+        res = DirSyncRes(self.logger)
         # dcmp.dst_only is sorted in reverse order because the contents of a directory
         # should be removed before the directory itself is removed.
         for path in sorted(dcmp.dst_only, reverse=True):
@@ -146,12 +134,12 @@ class AbsDirSync(object):
                 self.dst_api.make_dir(path, src_mode, res)
             elif (src_type == 'FILE'):
                 self.copy_file(path, res)
-        return res
 
 class DirSync(object):
     """ Object for directory synchronization and encryption """
 
-    def __init__(self, local_dir, remote_dir, **options):
+    def __init__(self, logger, local_dir, remote_dir, **options):
+        self.logger = logger
         self.local_dir = Path(local_dir).resolve()
         self.remote_dir = Path(remote_dir).resolve()
         self.options = options
@@ -173,10 +161,10 @@ class DirSync(object):
 
     def sync(self, command):
         if command == 'push':
-            ds = AbsDirSync(self.local_api, self.remote_api, self.push_file, self.options)
-            return ds.sync_dirs()
+            ds = AbsDirSync(self.logger, self.local_api, self.remote_api, self.push_file, self.options)
+            ds.sync_dirs()
         elif command == 'pull':
-            ds = AbsDirSync(self.remote_api, self.local_api, self.pull_file, self.options)
-            return ds.sync_dirs()
+            ds = AbsDirSync(self.logger, self.remote_api, self.local_api, self.pull_file, self.options)
+            ds.sync_dirs()
         else:
             raise ValueError("Error: command must be 'push' or 'pull'")

@@ -11,7 +11,7 @@ from .filecrypt import (
     path_hash,
 )
 from pathlib import Path
-import os, stat, json, shutil, tempfile
+import os, sys, stat, json, shutil, tempfile
 
 from nacl.utils import random as randombytes
 from nacl.pwhash import argon2i
@@ -41,6 +41,9 @@ def meta_encode_metadata(data):
 def meta_encode_path(path):
     code = path_encode(path)
     return (len(code) + 1).to_bytes(4, byteorder='little', signed=False) + b'\x01' + code
+
+def exc_info():
+    return str(sys.exc_info()[1])
 
 class DirCrypt(object):
     """ API for accessing an encrypted directory """
@@ -141,14 +144,14 @@ class DirCrypt(object):
             os.remove(meta_file)
             del self.included[path]
             if is_dir:
-                res.succ_removed_dirs.append(path)
+                res.log('REMOVE DIR', path)
             else:
-                res.succ_removed_files.append(path)
-        except e:
+                res.log('REMOVE FILE', path)
+        except:
             if is_dir:
-                res.fail_removed_dirs.append((path, str(e)))
+                res.log('REMOVE DIR', path, error=exc_info())
             else:
-                res.fail_removed_files.append((path, str(e)))
+                res.log('REMOVE FILE', path, error=exc_info())
 
     def make_dir(self, path, mode, res):
         dir_mode = stat.S_IFDIR | stat.S_IMODE(mode)
@@ -162,9 +165,9 @@ class DirCrypt(object):
             os.makedirs(meta_file.parent, exist_ok=True)
             file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
             self.included[path] = {'mode': dir_mode, 'mtime': 0, 'ctime': 0}
-            res.succ_added_dirs.append(path)
-        except e:
-            res.fail_added_dirs.append((path, str(e)))
+            res.log('ADD DIR', path)
+        except:
+            res.log('ADD DIR', path, error=exc_info())
 
     def push_file(self, path, src_file, res):
         st = os.stat(src_file, follow_symlinks=False)
@@ -178,9 +181,9 @@ class DirCrypt(object):
             os.makedirs(meta_file.parent, exist_ok=True)
             file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
             self.included[path] = {'mode': st.st_mode, 'mtime': st.st_mtime_ns, 'ctime': st.st_ctime_ns}
-            res.succ_copied_files.append(path)
-        except e:
-            res.fail_copied_files.append((path, str(e)))
+            res.log('COPY FILE', path)
+        except:
+            res.log('COPY FILE', path, error=exc_info())
 
     def pull_file(self, path, dst_file, res):
         crypt_path = path_hash(self.crypt_key, path)
@@ -193,6 +196,6 @@ class DirCrypt(object):
             _, mode, mtime, _ = dest_metadata(metadata)
             os.chmod(dst_file, stat.S_IMODE(mode))
             os.utime(dst_file, ns=(mtime, mtime))
-            res.succ_copied_files.append(path)
-        except e:
-            res.fail_copied_files.append((path, str(e)))
+            res.log('COPY FILE', path)
+        except:
+            res.log('COPY FILE', path, error=exc_info())

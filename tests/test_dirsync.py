@@ -10,10 +10,18 @@ from nacl.utils import random as randombytes
 from nacl.bindings import crypto_secretstream_xchacha20poly1305_KEYBYTES as KEYBYTES
 from pathlib import Path
 from pprint import pprint
-import os, string, tempfile, time, shutil
+import os, string, tempfile, time, shutil, logging, sys
 
 from hypothesis import given, assume, settings
 from hypothesis.strategies import booleans, integers, text, dictionaries, recursive, sampled_from
+
+def make_logger():
+    logger = logging.getLogger('test_dirsync')
+    logger.setLevel(logging.WARNING)
+    if not logger.handlers:
+        handler = logging.StreamHandler(sys.stdout)
+        logger.addHandler(handler)
+    return logger
 
 letters = string.ascii_lowercase + string.digits
 names = text(letters, min_size=1, max_size=100)
@@ -83,6 +91,7 @@ def check_dirs(dir1, dir2):
 )
 def test_push_pull(dtree, test_crypt, rebuild_meta):
     with tempfile.TemporaryDirectory() as tmp_dir:
+        logger = make_logger()
         tmp_dir = Path(tmp_dir)
         local_dir_1 = tmp_dir / 'local_dir_1'
         local_dir_2 = tmp_dir / 'local_dir_2'
@@ -92,11 +101,11 @@ def test_push_pull(dtree, test_crypt, rebuild_meta):
         make_dtree(remote_dir, {})
         time.sleep(0.001)
         remote_key = randombytes(KEYBYTES) if test_crypt else None
-        ds = DirSync(local_dir_1, remote_dir, test_key=remote_key)
-        ds.do('push')
+        ds = DirSync(logger, local_dir_1, remote_dir, test_key=remote_key)
+        ds.sync('push')
         if test_crypt and rebuild_meta:
             shutil.rmtree(remote_dir / __crypt_metadir__)
         time.sleep(0.001)
-        ds = DirSync(local_dir_2, remote_dir, test_key=remote_key)
-        ds.do('pull')
+        ds = DirSync(logger, local_dir_2, remote_dir, test_key=remote_key)
+        ds.sync('pull')
         assert check_dirs(local_dir_1, local_dir_2)

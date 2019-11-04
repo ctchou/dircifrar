@@ -1,6 +1,9 @@
 
 from pathlib import Path
-import os, stat, shutil
+import os, sys, stat, shutil
+
+def exc_info():
+    return str(sys.exc_info()[1])
 
 class DirPlain(object):
     """ API for accessing an unencrypted directory """
@@ -66,26 +69,26 @@ class DirPlain(object):
         plain_dir = self.dir_root / path
         try:
             shutil.rmtree(plain_dir)
-            res.succ_removed_dirs.append(path)
-        except e:
-            res.fail_removed_dirs.append((path, str(e)))
+            res.log('REMOVE DIR', path)
+        except:
+            res.log('REMOVE DIR', path, error=exc_info())
 
     def remove_file(self, path, res):
         plain_file = self.dir_root / path
         try:
             os.remove(plain_file)
-            res.succ_removed_files.append(path)
-        except e:
-            res.fail_removed_files.append((path, str(e)))
+            res.log('REMOVE FILE', path)
+        except:
+            res.log('REMOVE FILE', path, error=exc_info())
 
     def make_dir(self, path, mode, res):
         plain_dir = self.dir_root / path
         try:
             os.mkdir(plain_dir)
             os.chmod(plain_dir, stat.S_IMODE(mode))
-            res.succ_added_dirs.append(path)
-        except e:
-            res.fail_added_dirs.append((path, str(e)))
+            res.log('ADD DIR', path)
+        except:
+            res.log('ADD DIR', path, error=exc_info())
 
     # shutil.copy2 copies both file contents and metadata.
 
@@ -93,14 +96,14 @@ class DirPlain(object):
         dst_file = self.dir_root / path
         try:
             shutil.copy2(src_file, dst_file, follow_symlinks=False)
-            res.succ_copied_files.append(path)
-        except e:
-            res.fail_copied_files.append((path, str(e)))
+            res.log('COPY FILE', path)
+        except:
+            res.log('COPY FILE', path, error=exc_info())
 
     def pull_file(self, path, dst_file, res):
         src_file = self.dir_root / path
         try:
             shutil.copy2(src_file, dst_file, follow_symlinks=False)
-            res.succ_copied_files.append(path)
-        except e:
-            res.fail_copied_files.append((path, str(e)))
+            res.log('COPY FILE', path)
+        except:
+            res.log('COPY FILE', path, error=exc_info())

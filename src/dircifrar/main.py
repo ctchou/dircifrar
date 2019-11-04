@@ -29,8 +29,6 @@ def make_logger(fmt):
         logger.addHandler(handler)
     return logger
 
-# hdl.setFormatter(logging.Formatter('%(message)s'))
-
 def dirsync(command, prog, argv):
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -49,12 +47,11 @@ def dirsync(command, prog, argv):
     parser.add_argument('-d', '--diffonly', action='store_true', default=False,
                         help='only compute diffs between local_dir and remote_dir')
     args = parser.parse_args(argv)
-    syncer = DirSync(**vars(args))
     logger = make_logger('%(message)s')
     if args.verbose or args.diffonly:
         logger.setLevel(logging.INFO)
-    res = syncer.sync(command)
-    res.output(logger)
+    syncer = DirSync(logger, **vars(args))
+    syncer.sync(command)
 
 def dirwatch(command, prog, argv):
     parser = argparse.ArgumentParser(
