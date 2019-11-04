@@ -53,7 +53,11 @@ def make_plain_config(version, exclude):
     }
 
 def make_crypt_config(version, exclude, password):
-    master_key = randombytes(KEYBYTES)
+    random_data = randombytes(KEYBYTES)
+    kdf_salt = randombytes(argon2i.SALTBYTES)
+    master_key = argon2i.kdf(KEYBYTES, random_data, kdf_salt,
+                             opslimit=argon2i.OPSLIMIT_MODERATE,
+                             memlimit=argon2i.MEMLIMIT_MODERATE)
     wrap = wrap_master_key(master_key, version, password)
     return {
         'dir_type': 'crypt',

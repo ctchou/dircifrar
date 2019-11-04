@@ -68,9 +68,11 @@ function:
 https://libsodium.gitbook.io/doc/password_hashing/the_argon2i_function
 
 and a randomly generated *salt*.  The wrapping key is used to encrypt
-a randomly generated 256-bit *master key*, which in turn is used in
-the actual file and subdirectory encryptions.  The encryption of the
-master key uses libsodium's secretbox, which uses XSalsa20 + Poly1305:
+a 256-bit *master key*, which in turn is used in the actual file and
+subdirectory encryptions.  The master key itself is derived using
+Argon2i from freshly generated random data and salt. The encryption of
+the master key uses libsodium's secretbox, which uses XSalsa20 +
+Poly1305:
 
 https://libsodium.gitbook.io/doc/secret-key_cryptography/secretbox
 
