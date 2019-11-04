@@ -152,6 +152,7 @@ class DirCrypt(object):
                 res.log('REMOVE DIR', path, error=exc_info())
             else:
                 res.log('REMOVE FILE', path, error=exc_info())
+            raise
 
     def make_dir(self, path, mode, res):
         dir_mode = stat.S_IFDIR | stat.S_IMODE(mode)
@@ -168,6 +169,7 @@ class DirCrypt(object):
             res.log('ADD DIR', path)
         except:
             res.log('ADD DIR', path, error=exc_info())
+            raise
 
     def push_file(self, path, src_file, res):
         st = os.stat(src_file, follow_symlinks=False)
@@ -184,6 +186,7 @@ class DirCrypt(object):
             res.log('COPY FILE', path)
         except:
             res.log('COPY FILE', path, error=exc_info())
+            raise
 
     def pull_file(self, path, dst_file, res):
         crypt_path = path_hash(self.crypt_key, path)
@@ -199,3 +202,4 @@ class DirCrypt(object):
             res.log('COPY FILE', path)
         except:
             res.log('COPY FILE', path, error=exc_info())
+            raise

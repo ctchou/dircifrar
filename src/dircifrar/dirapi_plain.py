@@ -72,6 +72,7 @@ class DirPlain(object):
             res.log('REMOVE DIR', path)
         except:
             res.log('REMOVE DIR', path, error=exc_info())
+            raise
 
     def remove_file(self, path, res):
         plain_file = self.dir_root / path
@@ -80,6 +81,7 @@ class DirPlain(object):
             res.log('REMOVE FILE', path)
         except:
             res.log('REMOVE FILE', path, error=exc_info())
+            raise
 
     def make_dir(self, path, mode, res):
         plain_dir = self.dir_root / path
@@ -89,6 +91,7 @@ class DirPlain(object):
             res.log('ADD DIR', path)
         except:
             res.log('ADD DIR', path, error=exc_info())
+            raise
 
     # shutil.copy2 copies both file contents and metadata.
 
@@ -99,6 +102,7 @@ class DirPlain(object):
             res.log('COPY FILE', path)
         except:
             res.log('COPY FILE', path, error=exc_info())
+            raise
 
     def pull_file(self, path, dst_file, res):
         src_file = self.dir_root / path
@@ -107,3 +111,4 @@ class DirPlain(object):
             res.log('COPY FILE', path)
         except:
             res.log('COPY FILE', path, error=exc_info())
+            raise
