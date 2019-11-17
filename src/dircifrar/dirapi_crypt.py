@@ -191,6 +191,9 @@ class DirCrypt(object):
     def pull_file(self, path, dst_file, res):
         crypt_path = path_hash(self.crypt_key, path)
         crypt_file = self.crypt_dir / crypt_path
+        if not crypt_file.exists():
+            res.log('PULL FILE', path, error='Encrypted data file does not exist')
+            return
         def md_test(md):
             p, m, _, _ = dest_metadata(md)
             return p == path and stat.S_ISREG(m)
