@@ -192,7 +192,10 @@ class DirCrypt(object):
         crypt_path = path_hash(self.crypt_key, path)
         crypt_file = self.crypt_dir / crypt_path
         if not crypt_file.exists():
-            res.log('PULL FILE', path, error='Encrypted data file does not exist')
+            res.log('PULL FILE', path, error='DirCrypt: Encrypted data file does not exist')
+            return
+        if not dst_file.parent.exists():
+            res.log('PULL FILE', path, error='DirCrypt: Plaintext directory does not exist')
             return
         def md_test(md):
             p, m, _, _ = dest_metadata(md)
