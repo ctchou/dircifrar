@@ -172,7 +172,14 @@ class DirCrypt(object):
             raise
 
     def push_file(self, path, src_file, res):
-        st = os.stat(src_file, follow_symlinks=False)
+        try:
+            st = os.stat(src_file, follow_symlinks=False)
+        except FileNotFoundError:
+            res.log('PUSH FILE', path, error='DirCrypt: Plaintext file does not exist')
+            return
+        except:
+            res.log('PUSH FILE', path, error=exc_info())
+            raise
         metadata = make_metadata(path, st.st_mode, st.st_mtime_ns, st.st_ctime_ns)
         crypt_path = path_hash(self.crypt_key, path)
         crypt_file = self.crypt_dir / crypt_path
@@ -183,20 +190,17 @@ class DirCrypt(object):
             os.makedirs(meta_file.parent, exist_ok=True)
             file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
             self.included[path] = {'mode': st.st_mode, 'mtime': st.st_mtime_ns, 'ctime': st.st_ctime_ns}
-            res.log('COPY FILE', path)
+            res.log('PUSH FILE', path)
+        except FileNotFoundError:
+            res.log('PUSH FILE', path, error='DirCrypt: Plaintext file does not exist')
+            return
         except:
-            res.log('COPY FILE', path, error=exc_info())
+            res.log('PUSH FILE', path, error=exc_info())
             raise
 
     def pull_file(self, path, dst_file, res):
         crypt_path = path_hash(self.crypt_key, path)
         crypt_file = self.crypt_dir / crypt_path
-        if not crypt_file.exists():
-            res.log('PULL FILE', path, error='DirCrypt: Encrypted data file does not exist')
-            return
-        if not dst_file.parent.exists():
-            res.log('PULL FILE', path, error='DirCrypt: Plaintext directory does not exist')
-            return
         def md_test(md):
             p, m, _, _ = dest_metadata(md)
             return p == path and stat.S_ISREG(m)
@@ -206,6 +210,16 @@ class DirCrypt(object):
             os.chmod(dst_file, stat.S_IMODE(mode))
             os.utime(dst_file, ns=(mtime, mtime))
             res.log('COPY FILE', path)
+        except FileNotFoundError:
+            if not crypt_file.exists():
+                res.log('PULL FILE', path, error='DirCrypt: Encrypted data file does not exist')
+                return
+            elif not dst_file.parent.exists():
+                res.log('PULL FILE', path, error='DirCrypt: Plaintext directory does not exist')
+                return
+            else:
+                res.log('PULL FILE', path, error=exc_info())
+                raise
         except:
-            res.log('COPY FILE', path, error=exc_info())
+            res.log('PULL FILE', path, error=exc_info())
             raise
