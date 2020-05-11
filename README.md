@@ -142,10 +142,10 @@ which in addition also ignores the `.dircifrar_config.json` file.
     dircifrar watch-pull [-v] [-d] [-s settle] <local_dir> <remote_dir>
 ```
 
-perform a `push` or `pull` as described above and then keep watching
-the `<local_dir>` or `<remote_dir>` for any changes and copy the changes
-to `<remote_dir>` or `<local_dir>`.  The directory watching is performed
-using the **Watchman** utility:
+perform a `push` or `pull` as described above and keep watching the
+`<local_dir>` or `<remote_dir>` for any changes and copy the changes
+to `<remote_dir>` or `<local_dir>`.  The directory watching is
+performed using the **Watchman** utility:
 
 https://facebook.github.io/watchman/
 
@@ -242,12 +242,12 @@ pip install dircifrar
 
 
 `dircifrar` is implemented in Python3 and requires Python 3.6 or
-above.  The only Python libraries that `dircifrar` requires beyond a
+higher.  The only Python libraries that `dircifrar` requires beyond a
 standard Python3 installation are **PyNaCl**:
 
 https://pynacl.readthedocs.io/en/stable/
 
-and, if `watch-push/watch-pull` is to be used, **Watchman**:
+and **Watchman**:
 
 https://facebook.github.io/watchman/
 
@@ -265,9 +265,7 @@ pip install pynacl
 Unfortunately, **Watchman** does not seem to be directly installable
 via `pip`.  Please see **Watchman** website given above for
 installation instructions.  After **Watchman** is installed, make sure
-that its Python binding `pywatchman` is in Python's search path.  As
-mentioned above, **Watchman** is needed only if `dircifar watch-push/watch-pull`
-is used.
+that its Python binding `pywatchman` is in Python's search path.
 
 The tests use **pytest**:
 
