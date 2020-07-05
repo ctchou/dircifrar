@@ -19,6 +19,12 @@ from .dirsync import DirSync
 import argparse
 import logging
 
+def import_oxido(args):
+    if args.use_oxido:
+        import oxido
+        args.oxido = oxido
+    return args
+
 def make_logger(fmt):
     logger = logging.getLogger(__pkg_name__)
     logger.setLevel(logging.WARNING)
@@ -45,7 +51,9 @@ def dirsync(command, prog, argv):
                         help='verbose output')
     parser.add_argument('-d', '--diffonly', action='store_true', default=False,
                         help='only compute diffs between local_dir and remote_dir')
-    args = parser.parse_args(argv)
+    parser.add_argument('--use-oxido', action='store_true', default=False,
+                        help='Use Rust module Oxido')
+    args = import_oxido(parser.parse_args(argv))
     logger = make_logger('%(message)s')
     if args.verbose or args.diffonly:
         logger.setLevel(logging.INFO)
@@ -71,7 +79,9 @@ def dirwatch(command, prog, argv):
                         help='only compute diffs between local_dir and remote_dir')
     parser.add_argument('-s', '--settle', type=float, default=0.2,
                         help='Seconds to wait for changes to settle before synchronizing')
-    args = parser.parse_args(argv)
+    parser.add_argument('--use-oxido', action='store_true', default=False,
+                        help='Use Rust module Oxido')
+    args = import_oxido(parser.parse_args(argv))
     logger = make_logger('%(asctime)s %(message)s')
     if args.verbose or args.diffonly:
         logger.setLevel(logging.INFO)
@@ -106,7 +116,9 @@ def dirmod(command, prog, argv):
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('dir_path',
                         help='directory path')
-    args = parser.parse_args(argv)
+    parser.add_argument('--use-oxido', action='store_true', default=False,
+                        help='Use Rust module Oxido')
+    args = import_oxido(parser.parse_args(argv))
     if command == 'change-password':
         crypt_change_password(**vars(args))
     elif command == 'rebuild-meta':

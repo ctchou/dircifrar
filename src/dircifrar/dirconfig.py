@@ -132,13 +132,13 @@ def crypt_change_password(dir_path):
 
 # The optional argument 'test_key' is only for testing.
 
-def open_dirapi(dir_path, test_key=None):
+def open_dirapi(dir_path, test_key=None, oxido=None):
     if not dir_path.is_dir():
         raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
 
     # When testing DirCrypt API, we want avoid the (intentional) overhead of KDF.
     if test_key:
-        return DirCrypt(dir_path, __pkg_version__, [], {}, test_key)
+        return DirCrypt(dir_path, __pkg_version__, [], {}, test_key, oxido=oxido)
 
     config_file = dir_path / __config_filename__
     try:
@@ -168,14 +168,15 @@ def open_dirapi(dir_path, test_key=None):
         master_key, version_1 = unwrap_master_key(config['master_key_wrap'], password)
         if version_1 != version:
             raise ValueError(f"Error: {config_file} version check failed")
-        return DirCrypt(dir_path, version, exclude, config, master_key)
+        return DirCrypt(dir_path, version, exclude, config, master_key, oxido=oxido)
     else:
         raise ValueError(f"Error: {dir_type} is not a supported directory type")
 
-def crypt_rebuild_meta(dir_path):
+def crypt_rebuild_meta(dir_path, **options):
     dir_path = Path(dir_path).resolve()
     if not dir_path.is_dir():
         raise ValueError(f"Error: {dir_path} does not exist or is not a directory")
-    crypt_api = open_dirapi(dir_path)
+    oxido = options.get('oxido', None)
+    crypt_api = open_dirapi(dir_path, oxido=oxido)
     assert(crypt_api.dir_type == 'crypt')
     crypt_api.collect_paths(rebuild_meta=True)

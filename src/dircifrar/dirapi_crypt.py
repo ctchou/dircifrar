@@ -48,7 +48,7 @@ def exc_info():
 class DirCrypt(object):
     """ API for accessing an encrypted directory """
 
-    def __init__(self, dir_root, version, exclude, config, crypt_key):
+    def __init__(self, dir_root, version, exclude, config, crypt_key, oxido=None):
         self.dir_type = 'crypt'
         self.dir_root = dir_root
         self.version = version
@@ -57,6 +57,7 @@ class DirCrypt(object):
         self.crypt_key = crypt_key
         self.crypt_dir = dir_root / __crypt_dirname__
         self.crypt_meta = dir_root / __crypt_metadir__
+        self.oxido = oxido
 
     def collect_paths(self, rebuild_meta=False):
         self.included = dict()
@@ -81,13 +82,13 @@ class DirCrypt(object):
                     if any(pat.fullmatch(f) for pat in self.exclude) or not stat.S_ISREG(crypt_mode):
                         self.excluded.add(crypt_path)
                     else:
-                        metadata = file_decrypt(self.crypt_key, crypt_file, None, metadata_only=True)
+                        metadata = file_decrypt(self.crypt_key, crypt_file, None, metadata_only=True, oxido=self.oxido)
                         path, mode, mtime, ctime = dest_metadata(metadata)
                         assert path_hash(self.crypt_key, path) == crypt_path
                         self.included[path] = {'mode': mode, 'mtime': mtime, 'ctime': ctime}
                         meta_file = self.crypt_meta / crypt_path
                         os.makedirs(meta_file.parent, exist_ok=True)
-                        file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
+                        file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size, oxido=self.oxido)
 
         else:
             for cwd, dirs, files in os.walk(self.crypt_meta, followlinks=False):
@@ -104,7 +105,7 @@ class DirCrypt(object):
                     if any(pat.fullmatch(f) for pat in self.exclude) or not stat.S_ISREG(crypt_mode):
                         self.excluded.add(crypt_path)
                     else:
-                        metadata = file_decrypt(self.crypt_key, crypt_file, None, metadata_only=True)
+                        metadata = file_decrypt(self.crypt_key, crypt_file, None, metadata_only=True, oxido=self.oxido)
                         path, mode, mtime, ctime = dest_metadata(metadata)
                         assert path_hash(self.crypt_key, path) == crypt_path
                         self.included[path] = {'mode': mode, 'mtime': mtime, 'ctime': ctime}
@@ -162,9 +163,9 @@ class DirCrypt(object):
         meta_file = self.crypt_meta / crypt_path
         try:
             os.makedirs(crypt_file.parent, exist_ok=True)
-            file_encrypt(self.crypt_key, None, crypt_file, metadata, chunk_size)
+            file_encrypt(self.crypt_key, None, crypt_file, metadata, chunk_size, oxido=self.oxido)
             os.makedirs(meta_file.parent, exist_ok=True)
-            file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
+            file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size, oxido=self.oxido)
             self.included[path] = {'mode': dir_mode, 'mtime': 0, 'ctime': 0}
             res.log('ADD DIR', path)
         except:
@@ -186,9 +187,9 @@ class DirCrypt(object):
         meta_file = self.crypt_meta / crypt_path
         try:
             os.makedirs(crypt_file.parent, exist_ok=True)
-            file_encrypt(self.crypt_key, src_file, crypt_file, metadata, chunk_size)
+            file_encrypt(self.crypt_key, src_file, crypt_file, metadata, chunk_size, oxido=self.oxido)
             os.makedirs(meta_file.parent, exist_ok=True)
-            file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size)
+            file_encrypt(self.crypt_key, None, meta_file, metadata, chunk_size, oxido=self.oxido)
             self.included[path] = {'mode': st.st_mode, 'mtime': st.st_mtime_ns, 'ctime': st.st_ctime_ns}
             res.log('PUSH FILE', path)
         except FileNotFoundError:
@@ -201,11 +202,9 @@ class DirCrypt(object):
     def pull_file(self, path, dst_file, res):
         crypt_path = path_hash(self.crypt_key, path)
         crypt_file = self.crypt_dir / crypt_path
-        def md_test(md):
-            p, m, _, _ = dest_metadata(md)
-            return p == path and stat.S_ISREG(m)
+        path_bytes = path_encode(path)
         try:
-            metadata = file_decrypt(self.crypt_key, crypt_file, dst_file, metadata_test=md_test)
+            metadata = file_decrypt(self.crypt_key, crypt_file, dst_file, check_path=path_bytes, oxido=self.oxido)
             _, mode, mtime, _ = dest_metadata(metadata)
             os.chmod(dst_file, stat.S_IMODE(mode))
             os.utime(dst_file, ns=(mtime, mtime))

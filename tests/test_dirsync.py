@@ -12,8 +12,13 @@ from pathlib import Path
 from pprint import pprint
 import os, string, tempfile, time, shutil, logging, sys
 
+import pytest
 from hypothesis import given, assume, settings
 from hypothesis.strategies import booleans, integers, text, dictionaries, recursive, sampled_from
+
+@pytest.fixture(scope="module")
+def test_oxido(pytestconfig):
+    return pytestconfig.getoption('test_oxido')
 
 def make_logger():
     logger = logging.getLogger('test_dirsync')
@@ -80,16 +85,7 @@ def check_dirs(dir1, dir2):
     assert names2 == []
     return True
 
-@settings(
-    max_examples=100,
-    deadline=None,
-)
-@given(
-    dtree=dtree,
-    test_crypt=booleans(),
-    rebuild_meta=booleans(),
-)
-def test_push_pull(dtree, test_crypt, rebuild_meta):
+def run_push_pull(dtree, test_crypt, rebuild_meta, oxido=None):
     with tempfile.TemporaryDirectory() as tmp_dir:
         logger = make_logger()
         tmp_dir = Path(tmp_dir)
@@ -101,11 +97,39 @@ def test_push_pull(dtree, test_crypt, rebuild_meta):
         make_dtree(remote_dir, {})
         time.sleep(0.001)
         remote_key = randombytes(KEYBYTES) if test_crypt else None
-        ds = DirSync(logger, local_dir_1, remote_dir, test_key=remote_key)
+        ds = DirSync(logger, local_dir_1, remote_dir, test_key=remote_key, oxido=oxido)
         ds.sync('push')
         if test_crypt and rebuild_meta:
             shutil.rmtree(remote_dir / __crypt_metadir__)
         time.sleep(0.001)
-        ds = DirSync(logger, local_dir_2, remote_dir, test_key=remote_key)
+        ds = DirSync(logger, local_dir_2, remote_dir, test_key=remote_key, oxido=oxido)
         ds.sync('pull')
         assert check_dirs(local_dir_1, local_dir_2)
+
+@settings(
+    max_examples=100,
+    deadline=None,
+)
+@given(
+    dtree=dtree,
+    test_crypt=booleans(),
+    rebuild_meta=booleans(),
+)
+def test_push_pull_p(dtree, test_crypt, rebuild_meta):
+    run_push_pull(dtree, test_crypt, rebuild_meta)
+
+@settings(
+    max_examples=100,
+    deadline=None,
+)
+@given(
+    dtree=dtree,
+    test_crypt=booleans(),
+    rebuild_meta=booleans(),
+)
+def test_push_pull_r(test_oxido, dtree, test_crypt, rebuild_meta):
+    if test_oxido:
+        import oxido
+        run_push_pull(dtree, test_crypt, rebuild_meta, oxido=oxido)
+    else:
+        assert True

@@ -11,8 +11,13 @@ from nacl.bindings import crypto_secretstream_xchacha20poly1305_KEYBYTES as KEYB
 import tempfile
 from pathlib import Path
 
+import pytest
 from hypothesis import given, assume
 from hypothesis.strategies import integers, booleans, characters, text, lists
+
+@pytest.fixture(scope="module")
+def test_oxido(pytestconfig):
+    return pytestconfig.getoption('test_oxido')
 
 plain_name = 'plain'
 crypt_name = 'crypt'
@@ -28,14 +33,8 @@ num_chunks_max = 5
 odd_chunk_size_min = -50
 odd_chunk_size_max =  50
 
-@given(
-    metadata_size=integers(metadata_size_min, metadata_size_max),
-    num_chunks=integers(num_chunks_min, num_chunks_max),
-    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
-    crypt_exists=booleans(),
-    plain_1_exists=booleans(),
-)
-def test_file_crypt(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists):
+def run_file_enc_dec(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists,
+                     oxido_encrypt=None, oxido_decrypt=None):
     plain_size = chunk_size * num_chunks + odd_chunk_size
     assume(plain_size >= 0)
     with tempfile.TemporaryDirectory() as tmp_dir:
@@ -54,16 +53,69 @@ def test_file_crypt(metadata_size, num_chunks, odd_chunk_size, crypt_exists, pla
         if plain_1_exists:
             with open(plain_file_1, 'wb') as plain_1:
                 plain_1.write(some_data)
-        file_encrypt(key, plain_file_0, crypt_file, metadata, chunk_size)
-        md = file_decrypt(key, crypt_file, plain_file_1, metadata_only=True)
+        file_encrypt(key, plain_file_0, crypt_file, metadata, chunk_size, oxido=oxido_encrypt)
+        md = file_decrypt(key, crypt_file, plain_file_1, metadata_only=True, oxido=oxido_decrypt)
         assert md == metadata
-        def md_test(md):
-            return md == metadata
-        md = file_decrypt(key, crypt_file, plain_file_1, metadata_test=md_test)
+        md = file_decrypt(key, crypt_file, plain_file_1, oxido=oxido_decrypt)
         assert md == metadata
         with open(plain_file_1, 'rb') as plain_1:
             plain_data_1 = plain_1.read()
             assert plain_data_1 == plain_data
+
+@given(
+    metadata_size=integers(metadata_size_min, metadata_size_max),
+    num_chunks=integers(num_chunks_min, num_chunks_max),
+    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
+    crypt_exists=booleans(),
+    plain_1_exists=booleans(),
+)
+def test_file_enc_dec_pp(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists):
+    run_file_enc_dec(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists)
+
+@given(
+    metadata_size=integers(metadata_size_min, metadata_size_max),
+    num_chunks=integers(num_chunks_min, num_chunks_max),
+    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
+    crypt_exists=booleans(),
+    plain_1_exists=booleans(),
+)
+def test_file_enc_dec_rp(test_oxido, metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists):
+    if test_oxido:
+        import oxido
+        run_file_enc_dec(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists,
+                         oxido_encrypt=oxido)
+    else:
+        assert True
+
+@given(
+    metadata_size=integers(metadata_size_min, metadata_size_max),
+    num_chunks=integers(num_chunks_min, num_chunks_max),
+    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
+    crypt_exists=booleans(),
+    plain_1_exists=booleans(),
+)
+def test_file_enc_dec_pr(test_oxido, metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists):
+    if test_oxido:
+        import oxido
+        run_file_enc_dec(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists,
+                         oxido_decrypt=oxido)
+    else:
+        assert True
+
+@given(
+    metadata_size=integers(metadata_size_min, metadata_size_max),
+    num_chunks=integers(num_chunks_min, num_chunks_max),
+    odd_chunk_size=integers(odd_chunk_size_min, odd_chunk_size_max),
+    crypt_exists=booleans(),
+    plain_1_exists=booleans(),
+)
+def test_file_enc_dec_rr(test_oxido, metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists):
+    if test_oxido:
+        import oxido
+        run_file_enc_dec(metadata_size, num_chunks, odd_chunk_size, crypt_exists, plain_1_exists,
+                         oxido_encrypt=oxido, oxido_decrypt=oxido)
+    else:
+        assert True
 
 @given(
     names=lists(text(alphabet=characters(

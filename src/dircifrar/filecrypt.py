@@ -12,12 +12,17 @@ from nacl.bindings import (
 )
 from nacl.hash import generichash
 from pathlib import Path
-import os, io, tempfile
+import os, stat, io, tempfile
 
 exp2_32 = 2 ** 32
 exp2_64 = 2 ** 64
 
-def file_encrypt(key, plain_file, crypt_file, metadata, chunk_size):
+def file_encrypt(key, plain_file, crypt_file, metadata, chunk_size, oxido=None):
+    if oxido:
+        plain_file_str = str(plain_file) if plain_file else ''
+        oxido.file_encrypt(key, plain_file_str, str(crypt_file), metadata, chunk_size)
+        return
+
     metadata_size = len(metadata)
     plain_size = os.path.getsize(plain_file) if plain_file else 0
     assert metadata_size >=0 and metadata_size < exp2_32
@@ -47,7 +52,12 @@ def file_encrypt(key, plain_file, crypt_file, metadata, chunk_size):
             os.remove(crypt_file)
         os.link(crypt_fp.name, crypt_file)
 
-def file_decrypt(key, crypt_file, plain_file, metadata_only=False, metadata_test=None):
+def file_decrypt(key, crypt_file, plain_file, metadata_only=False, check_path=None, oxido=None):
+    if oxido:
+        path_bytes = check_path if check_path else b''
+        metadata = oxido.file_decrypt(key, str(crypt_file), str(plain_file), metadata_only, path_bytes)
+        return bytes(metadata)
+
     with open(crypt_file, 'rb') as crypt_fp:
         descriptor = crypt_fp.read(16)
         metadata_size = int.from_bytes(descriptor[0:4], byteorder='little', signed=False)
@@ -62,8 +72,10 @@ def file_decrypt(key, crypt_file, plain_file, metadata_only=False, metadata_test
         metadata = plaintext[16:]
         if metadata_only:
             return metadata
-        if metadata_test:
-            assert metadata_test(metadata)
+        if check_path:
+            mode = int.from_bytes(metadata[0:4], byteorder='little', signed=False)
+            path_bytes = metadata[20:]
+            assert check_path == path_bytes and stat.S_ISREG(mode)
         with tempfile.NamedTemporaryFile(mode='wb', dir=os.path.dirname(plain_file)) as plain_fp:
             while plain_size > 0:
                 ciphertext = crypt_fp.read(chunk_size + crypto_ABYTES)
