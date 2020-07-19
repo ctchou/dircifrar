@@ -16,7 +16,6 @@ from .dirconfig import (
     crypt_rebuild_meta,
 )
 from .dirsync import DirSync
-from .watchsync import WatchSync
 import argparse
 import logging
 
@@ -76,6 +75,7 @@ def dirwatch(command, prog, argv):
     logger = make_logger('%(asctime)s %(message)s')
     if args.verbose or args.diffonly:
         logger.setLevel(logging.INFO)
+    from .watchsync import WatchSync
     WatchSync(logger, command, **vars(args))
 
 def dirinit(command, prog, argv):
