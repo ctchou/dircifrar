@@ -40,7 +40,7 @@ setup(
     ],
     python_requires = ">=3.6",
     setup_requires=["setuptools", "wheel"],
-    install_requires = ('pynacl',),
+    install_requires = ('pynacl', 'pywatchman'),
     tests_require = ["pytest>=3.2.1,!=3.3.0",
                      "hypothesis>=3.27.0"],
     entry_points = {
